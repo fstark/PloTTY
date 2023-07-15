@@ -70,7 +70,10 @@ This is an example image generated based on a midjourney "cat" prompt:
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+python test/py images/sample3.png
 ```
+
+Should display the cat image.
 
 # Challenge 5: Interfacing with midjourney
 
