@@ -1,6 +1,6 @@
-# caddraw
+# casdraw
 
-CadDraw is a work in progrss to create a PB-700 plotter magic drawing program.
+CasDraw is a work in progrss to create a PB-700 plotter magic drawing program.
 
 The ultimate goal is to produce a program that can be run on a PB-700 with a FA-10 plotter, and produce an image from an input text.
 
@@ -70,7 +70,7 @@ This is an example image generated based on a midjourney "cat" prompt:
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-python test/py images/sample3.png
+python test/py --input images/sample3.png
 ```
 
 Should display the cat image.
