@@ -47,9 +47,9 @@ While it would be better to have a nice self-contained software, the current end
 The following ``casutil``` commands can write a program to the PB-700
 
 ```
-	casutil/linux/bas850 -b prog.bas prog.bin
-	casutil/linux/wave850 -b prog.bin prog.wav
-    play prog.wav
+casutil/linux/bas850 -b prog.bas prog.bin
+casutil/linux/wave850 -b prog.bin prog.wav
+play prog.wav
 ```
 
 # Challenge 3: Decoding input from pb-700
@@ -59,6 +59,18 @@ The following ``casutil``` commands can write a program to the PB-700
 # Challenge 4: Generating the basic instructions
 
 The test.py program does the generation from the top-left quarter of a midjourney supplied 2048x2048 image.
+
+This is an example image generated based on a midjourney "cat" prompt:
+
+![A cat](images/sample3-out.png)
+
+## Installing test.py
+
+```
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
 
 # Challenge 5: Interfacing with midjourney
 
