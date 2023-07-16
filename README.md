@@ -59,13 +59,16 @@ play prog.wav
 
 # Challenge 4: Generating the images
 
-2048x2048 image.
+Midjourney generates 2048x2048 images:
 
-This is an example image generated based on a midjourney "cat" prompt:
+![4 line art cats](images/sample3.png)
+
+This is the resulting traced image:
 
 ![A cat](images/sample3-out.png)
 
-The test.py program does the generation from the top-left quarter of a midjourney supplied 
+The test.py program does the generation from the top-left quarter of a midjourney supplied image.
+
 ## Installing test.py
 
 ```

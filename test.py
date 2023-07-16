@@ -5,6 +5,7 @@ import cv2
 from skimage.morphology import skeletonize
 import argparse
 
+# Use --input to specify input file
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Filename Parser')
     parser.add_argument('--input', default='images/sample1.png', help='Input filename')
@@ -14,12 +15,13 @@ def parse_arguments():
 args = parse_arguments()
 source_path = args.input
 
+# Directions for path find
 dx = [ 1,0,-1,0, 1,1,-1,-1]
 dy = [ 0,1,0,-1, -1,1,1,-1]
 
 size = 95*5     # PB-700 size
 
-def trace_line_from( img, x, y ):
+def trace_single_line_from( img, x, y ):
     "Remove from image a path starting from x,y and returns it in array"
     h,w = img.shape
     result = []
@@ -40,6 +42,17 @@ def trace_line_from( img, x, y ):
                     result.append( [x,y] )
                     finished = False
                     break
+    return result
+
+def trace_line_from( img, x, y ):
+    "Remove from image a path containing x,y and returns it in array"
+    h,w = img.shape
+    result = []
+
+    result = trace_single_line_from( img, x, y )
+    result.reverse()
+    result = result + trace_single_line_from( img, x, y )[1:]
+
     return result
 
  
@@ -107,6 +120,12 @@ for c in result:
 img3 = 255 * np.ones(shape=(size,size,3), dtype=np.uint8)
 cv2.polylines(img3, result, False, (0, 0, 0), 1)
 
+i = 0
+for l in result:
+    c = [(0, 0, 0),(255, 0, 0),(0, 255, 0),(0, 0, 255)][i%4]
+    cv2.polylines(img3, [l], False, c, 1)
+    i = i+1
+
 # # cv2.drawContours(img3, contours, -1, (0, 0, 255), 1) 
 
 # for cnt in contours:
@@ -122,43 +141,92 @@ cv2.imshow('Image Final', img3)
 
 cv2.imwrite('output.png', img3)
 
+# Segment list for sorting
+
+def distance2( p0, p1 ):
+    return (p0[0]-p1[0])*(p0[0]-p1[0])+(p0[1]-p1[1])*(p0[1]-p1[1])
+
+class SegmentList:
+    segments_ = []
+
+    def __init__( self, segments ):
+        for seg in segments:
+                # Segments are one level too deep, for whatever reason
+            self.segments_.append( list([p[0][0], p[0][1]] for p in seg) )
+
+    def closest( self, x, y ):
+        d = 10240*10240
+        index = 0
+        for i in range(len(self.segments_)):
+            d0 = distance2( self.segments_[i][0], (x,y) )
+            d1 = distance2( self.segments_[i][-1], (x,y) )
+            if (d0<d):
+                index = i
+                d = d0
+
+            if (d1<d):
+                index = i
+                d = d1
+                self.segments_[i].reverse()
+
+        return self.segments_.pop(index)
+
+    def done( self ):
+        return len(self.segments_)==0
+
+sl = SegmentList( result )
+
 # Generating the BASIC program for the PB-700
 
 class Generator:
     line_ = 2
-    string_ = "1LPRINT CHR$(28);CHR$(37)\n"
+    string_ = '1LPRINT CHR$(28);CHR$(37):LPRINT"O0,-96"\n'
 
     def add_small_segment( self, s ):
-        self.string_ += str(self.line_)+'LPRINT "D'
+        self.string_ += str(self.line_)+'LPRINT"D'
         self.line_ += 1
         sep = ""
         for p in s:
             self.string_ += sep
             sep = ","
-            self.string_ += str(p[0]/10)+","+str(p[1]/10)
+            self.string_ += str(p[0]/5)+","+str((size-p[1])/5)
         self.string_ += '"\n'
 
     def add_segment( self, s ):
-        while (len(s)>0):
+        while (len(s)>1):
             self.add_small_segment( s[:6] )
             s = s[5:]
+
+    def end( self ):
+        self.string_ += '999LPRINT"M0,-20"\n'
 
     def string( self ):
         return self.string_
 
 g = Generator()
 
-for c in result:
-    g.add_segment( list([p[0][0], p[0][1]] for p in c) )
-    # start = True
-    # for p in c:
-    #     if start:
-    #         g.move_to( p[0][0]/10, p[0][1]/10 )
-    #         start = False
-    #     else:
-    #         g.line_to( p[0][0]/10, p[0][1]/10 )
+# for c in result:
+#     g.add_segment( list([p[0][0], p[0][1]] for p in c) )
+
+img4 = 255 * np.ones(shape=(size,size,3), dtype=np.uint8)
+
+
+x = 0
+y = 0
+while not sl.done():
+    cur = sl.closest( x, y )
+    g.add_segment( cur )
+
+    cv2.line(img3, (x, y), (cur[0][0], cur[0][1]), (0,0,0), thickness=1)
+
+    x = cur[-1][0]
+    y = cur[-1][1]
+
+g.end()
 
 print( g.string() )
+
+cv2.imshow('Optimized', img3)
 
 # Exiting the window if 'q' is pressed on the keyboard.
 if cv2.waitKey(0) & 0xFF == ord('q'): 
