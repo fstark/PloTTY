@@ -1,6 +1,6 @@
 # casdraw
 
-CasDraw is a work in progrss to create a PB-700 plotter magic drawing program.
+CasDraw is a work in progress to create a PB-700 plotter magic drawing program.
 
 The ultimate goal is to produce a program that can be run on a PB-700 with a FA-10 plotter, and produce an image from an input text.
 
@@ -31,6 +31,7 @@ The basic programs will then be encoded and played back to the computer. Each ba
 * Fixing my CA-10
 * Writing programs to the pb-700
 * Decoding input from pb-700
+* Generating the image
 * Generating the basic instructions
 * Interfacing with midjourney
 
@@ -56,14 +57,15 @@ play prog.wav
 
 *In Progress*
 
-# Challenge 4: Generating the basic instructions
+# Challenge 4: Generating the images
 
-The test.py program does the generation from the top-left quarter of a midjourney supplied 2048x2048 image.
+2048x2048 image.
 
 This is an example image generated based on a midjourney "cat" prompt:
 
 ![A cat](images/sample3-out.png)
 
+The test.py program does the generation from the top-left quarter of a midjourney supplied 
 ## Installing test.py
 
 ```
@@ -75,6 +77,18 @@ python test/py --input images/sample3.png
 
 Should display the cat image.
 
-# Challenge 5: Interfacing with midjourney
+# Challenge 5: Generating the basic instructions
+
+Print is accessed via ``LPRINT`` statements. Every statement is line terminated (not sent to the printer until line end). Not two statement on the same line. BASIC limits line length to be 79 characters, it is unclear how long can a printer instruction be.
+
+First implementation is to directly send a basic program with ``LPRINT`` instructions. We could probably do better with a set of ``DATA`` lines, in particular as it seems that there are only 256 positions x and y on the printer, so we could get close to 2 bytes per coordinates.
+
+In order to simplify, we will consider the following characters ``nn LPRINT "D"`` necessary for printing (basic line number, ``LPRINT`` instruction, quotes, and ``D``(raw) command). This is 13 characters, do we have 66 characters available for coordinates. Each coordinate takes 5 characters, so a first implementation is to split the drawing into a sequence of 6 segment lines.
+
+Code for activating the printer ``LPRINT CHR$(28);CHR$(37)``
+
+Code for printing ``LPRINT "D12.3,45.6,78.9,1.2,34.5"``
+
+# Challenge 6: Interfacing with midjourney
 
 It seems that the "midjourney API" is discord. Which is quite a WTF. *In Progress*.

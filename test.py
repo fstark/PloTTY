@@ -95,7 +95,7 @@ skeleton = 255-skeleton
 tot = 0
 for c in result:
     tot += len(c)
-print( "Total points==",tot )
+# print( "Total points==",tot )
 
 # # Detecting contours in image.
 # contours, _= cv2.findContours(skeleton, cv2.RETR_LIST,
@@ -121,6 +121,44 @@ cv2.polylines(img3, result, False, (0, 0, 0), 1)
 cv2.imshow('Image Final', img3) 
 
 cv2.imwrite('output.png', img3)
+
+# Generating the BASIC program for the PB-700
+
+class Generator:
+    line_ = 2
+    string_ = "1LPRINT CHR$(28);CHR$(37)\n"
+
+    def add_small_segment( self, s ):
+        self.string_ += str(self.line_)+'LPRINT "D'
+        self.line_ += 1
+        sep = ""
+        for p in s:
+            self.string_ += sep
+            sep = ","
+            self.string_ += str(p[0]/10)+","+str(p[1]/10)
+        self.string_ += '"\n'
+
+    def add_segment( self, s ):
+        while (len(s)>0):
+            self.add_small_segment( s[:6] )
+            s = s[5:]
+
+    def string( self ):
+        return self.string_
+
+g = Generator()
+
+for c in result:
+    g.add_segment( list([p[0][0], p[0][1]] for p in c) )
+    # start = True
+    # for p in c:
+    #     if start:
+    #         g.move_to( p[0][0]/10, p[0][1]/10 )
+    #         start = False
+    #     else:
+    #         g.line_to( p[0][0]/10, p[0][1]/10 )
+
+print( g.string() )
 
 # Exiting the window if 'q' is pressed on the keyboard.
 if cv2.waitKey(0) & 0xFF == ord('q'): 
