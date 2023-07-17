@@ -109,32 +109,47 @@ threshold = 255-threshold
 
 
 # Erodes black pixels based on a 3x3 grid (center stays black if all 9 pixels are black)
-def erode_black( img ):
-    eroded = img.copy()
-    h,w = img.shape
-    eroded = np.zeros(shape=(h,w), dtype=np.uint8)
+# def erode_black( img ):
+#     eroded = img.copy()
+#     h,w = img.shape
+#     eroded = np.zeros(shape=(h,w), dtype=np.uint8)
 
-    for x in range(h):
-        for y in range(w):
-            black = 255
-            for dx in [-1,0,1]:
-                for dy in [-1,0,1]:
-                    x0 = x+dx
-                    y0 = y+dy
-                    if not (x0<0 or x0>=w or y0<0 or y0>=h):
-                        if black==255:
-                            black = img[y0,x0]
-            eroded[y,x] = black
+#     for x in range(h):
+#         for y in range(w):
+#             black = 255
+#             for dx in [-1,0,1]:
+#                 for dy in [-1,0,1]:
+#                     x0 = x+dx
+#                     y0 = y+dy
+#                     if not (x0<0 or x0>=w or y0<0 or y0>=h):
+#                         if black==255:
+#                             black = img[y0,x0]
+#             eroded[y,x] = black
 
-    return eroded
+#     return eroded
+
+# if erosion>0:
+#     eroded = threshold
+#     for i in range(erosion):
+#         eroded = erode_black(eroded)
+#     threshold -= eroded
+#     eroded = 255-eroded
+#     cv2.imshow('eroded', eroded) 
+
+def generate_convolution_matrix( iterations ):
+    n = iterations*2+1
+    result = np.array([[1]*n]*n)
+    # print(result)
+    return result
 
 if erosion>0:
-    eroded = threshold
-    for i in range(erosion):
-        eroded = erode_black(eroded)
-    threshold -= eroded
-    eroded = 255-eroded
-    cv2.imshow('eroded', eroded) 
+    matrix = generate_convolution_matrix(erosion)
+    eroded = cv2.filter2D(255-threshold, -1, matrix)
+    _, eroded = cv2.threshold(eroded, 1, 255, cv2.THRESH_BINARY)
+    threshold -= 255-eroded
+    cv2.imshow('eroded',eroded)
+    cv2.imwrite('/tmp/erosion.png', eroded)
+    cv2.imwrite('/tmp/eroded.png', 255-threshold)
 
 # Turn into skeleton
 skeleton = cv2.ximgproc.thinning(threshold)
@@ -217,3 +232,6 @@ while not sl.done():
 
 
 print( json.dumps(draw_list) )
+
+if cv2.waitKey(0) & 0xFF == ord('q'): 
+    cv2.destroyAllWindows()
