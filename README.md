@@ -87,9 +87,9 @@ The PB-700 is then able to draw our nice penguin:
 
 ![Result](writeup/result.png)
 
-Here is a video of a PB-700 printing the real penguin!
+Click below to see a video of a PB-700 printing the real penguin!
 
 [![Watch the video!](https://img.youtube.com/vi/iS6pO1wz-kc/hqdefault.jpg)](https://youtu.be/iS6pO1wz-kc)
 
 
-The tracing code is in trace.py and outputs the path in json. The basic generation in json2basic.py, and take the json in input. You can use casutil to generate a wav file for consumption of you PB-700/FA-10!
+The tracing code is in ``trace.py`` and outputs the path in json. The basic generation in ``json2basic.py``, and take the json in input. There are example source images and results in the ``image`` subdirectory. You can use casutil to generate a wav file for consumption of you PB-700/FA-10!
