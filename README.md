@@ -26,7 +26,7 @@ This is still a pixel image, but it can be traced, giving the following segments
 
 ![Segments](writeup/segments.png)
 
-Segments are ordered and flipped to minimize the travel of the poltter head:
+Segments are ordered and flipped to minimize the travel of the plotter head:
 
 ![Motion](writeup/motions.png)
 
