@@ -1,5 +1,10 @@
 # casdraw
 
+
+[![Watch the video](https://img.youtube.com/vi/nTQUwghvy5Q/default.jpg)](https://youtu.be/nTQUwghvy5Q)
+
+https://youtu.be/sSLVlxQoVYE
+
 CasDraw is a work in progress to create a PB-700 plotter magic drawing program.
 
 The ultimate goal is to produce a program that can be run on a PB-700 with a FA-10 plotter, and produce an image from an input text.
@@ -7,6 +12,10 @@ The ultimate goal is to produce a program that can be run on a PB-700 with a FA-
 There are a few challenges, but all of them can be overcome.
 
 The objective is to create such images, it is understood that it will absolutely not be practical at all.
+
+# Status
+
+
 
 # Architecture
 
@@ -68,6 +77,10 @@ This is the resulting traced image:
 ![A cat](images/sample3-out.png)
 
 The test.py program does the generation from the top-left quarter of a midjourney supplied image.
+
+It extracts the top-left corner, threshold it to black and white, resize it to 475x475 (as the pb-700 has 95mm accessible with a 0.2mm step), uses opencv ``skeleton`` to thin lines, a custom tracing algorithm and an opencv polygon optimisation.
+
+Above image is a 
 
 ## Installing test.py
 
