@@ -67,7 +67,17 @@ img = cv2.imread(source_path, cv2.IMREAD_GRAYSCALE)
 h,w = img.shape
 img = img[:h//2,:w//2]
 
+
+# height, width = img.shape[:2]
+# start_row = height//2
+# end_row = height
+# start_col = 0
+# end_col = width//2
+# img = img[start_row:end_row, start_col:end_col]
+
+
 img = cv2.resize( img, (size,size), interpolation = cv2.INTER_AREA)
+
 
 
 cv2.imshow('source grayscale', img) 
@@ -123,7 +133,7 @@ cv2.polylines(img3, result, False, (0, 0, 0), 1)
 i = 0
 for l in result:
     c = [(0, 0, 0),(255, 0, 0),(0, 255, 0),(0, 0, 255)][i%4]
-    cv2.polylines(img3, [l], False, c, 1)
+    cv2.polylines(img3, [l], False, (0,0,0), 1)
     i = i+1
 
 # # cv2.drawContours(img3, contours, -1, (0, 0, 255), 1) 
