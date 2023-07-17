@@ -69,6 +69,6 @@ The PB-700 is then able to draw our nice penguin:
 
 Here is a video of a PB-700 printing the real penguin!
 
-[![Watch the video!](https://img.youtube.com/vi/iS6pO1wz-kc/default.jpg)](https://youtu.be/iS6pO1wz-kc)
+[![Watch the video!](https://img.youtube.com/vi/iS6pO1wz-kc/hqdefault.jpg)](https://youtu.be/iS6pO1wz-kc)
 
 
