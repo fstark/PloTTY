@@ -10,7 +10,8 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Filename Parser')
     parser.add_argument('--input', default='images/sample1.png', help='Input filename')
     parser.add_argument('--corner', default='1', help='Corner of the image (1,2,3,4 or 0 for no corner)')
-    parser.add_argument('--epsilon', default='1.5', help='Epsilon (how large of an error can we make against theorical line`)')
+    parser.add_argument('--epsilon', default='1.5', help='Epsilon (how large of an error can we make against theorical line)')
+    parser.add_argument('--erosion', default='0', help='Number of erosion passes to be done to contour the large black areas')
     args = parser.parse_args()
     return args
 
@@ -18,6 +19,7 @@ args = parse_arguments()
 source_path = args.input
 corner = int(args.corner)
 epsilon = float(args.epsilon)
+erosion = int(args.erosion)
 
 # Directions for path find
 dx = [ 1,0,-1,0, 1,1,-1,-1]
@@ -101,6 +103,36 @@ cv2.imshow('thresholded', threshold)
 cv2.moveWindow( 'thresholded',size*2,0)
 cv2.imwrite('/tmp/4-threshold.png', threshold)
 threshold = 255-threshold
+
+
+
+# Erodes black pixels based on a 3x3 grid (center stays black if all 9 pixels are black)
+def erode_black( img ):
+    eroded = img.copy()
+    h,w = img.shape
+    eroded = np.zeros(shape=(h,w), dtype=np.uint8)
+
+    for x in range(h):
+        for y in range(w):
+            black = 255
+            for dx in [-1,0,1]:
+                for dy in [-1,0,1]:
+                    x0 = x+dx
+                    y0 = y+dy
+                    if not (x0<0 or x0>=w or y0<0 or y0>=h):
+                        if black==255:
+                            black = img[y0,x0]
+            eroded[y,x] = black
+
+    return eroded
+
+if erosion>0:
+    eroded = threshold
+    for i in range(erosion):
+        eroded = erode_black(eroded)
+    threshold -= eroded
+    eroded = 255-eroded
+    cv2.imshow('eroded', eroded) 
 
 # Turn into skeleton
 skeleton = cv2.ximgproc.thinning(threshold)
