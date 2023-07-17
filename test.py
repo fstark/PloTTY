@@ -9,11 +9,15 @@ import argparse
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Filename Parser')
     parser.add_argument('--input', default='images/sample1.png', help='Input filename')
+    parser.add_argument('--corner', default='1', help='Corner of the image (1,2,3,4 or 0 for no corner)')
+    parser.add_argument('--epsilon', default='1.5', help='Epsilon (how large of an error can we make against theorical line`)')
     args = parser.parse_args()
     return args
 
 args = parse_arguments()
 source_path = args.input
+corner = int(args.corner)
+epsilon = float(args.epsilon)
 
 # Directions for path find
 dx = [ 1,0,-1,0, 1,1,-1,-1]
@@ -21,6 +25,7 @@ dy = [ 0,1,0,-1, -1,1,1,-1]
 
 size = 95*5     # PB-700 size
 
+# Utility tracing function
 def trace_single_line_from( img, x, y ):
     "Remove from image a path starting from x,y and returns it in array"
     h,w = img.shape
@@ -44,6 +49,7 @@ def trace_single_line_from( img, x, y ):
                     break
     return result
 
+# Main tracing function: we trace twice and join the two resulting paths
 def trace_line_from( img, x, y ):
     "Remove from image a path containing x,y and returns it in array"
     h,w = img.shape
@@ -58,29 +64,31 @@ def trace_line_from( img, x, y ):
  
 # Reading image
 original = cv2.imread(source_path, cv2.IMREAD_COLOR)
-
 cv2.imshow('Original', original) 
+cv2.imwrite('/tmp/0-original.png', original)
 
-# Reading same image in another 
-# variable and converting to gray scale.
+# Reading grayscale
 img = cv2.imread(source_path, cv2.IMREAD_GRAYSCALE)
+cv2.imwrite('/tmp/1-grayscale.png', img)
+
+# Extract corner
 h,w = img.shape
-img = img[:h//2,:w//2]
+if corner!=0:
+    corners = [(0,0),(0,1),(1,0),(1,1)]
+    c = corners[corner-1]
+    start_row = h//2 * c[0]
+    end_row = start_row + h//2
+    start_col = w//2 * c[1]
+    end_col = start_col + w//2
+    img = img[start_row:end_row, start_col:end_col]
 
+cv2.imwrite('/tmp/2-extract.png', img)
 
-# height, width = img.shape[:2]
-# start_row = height//2
-# end_row = height
-# start_col = 0
-# end_col = width//2
-# img = img[start_row:end_row, start_col:end_col]
-
-
+# Resize to PB-700 resolution
 img = cv2.resize( img, (size,size), interpolation = cv2.INTER_AREA)
-
-
-
 cv2.imshow('source grayscale', img) 
+cv2.moveWindow( 'source grayscale',size,0)
+cv2.imwrite('/tmp/3-475px.png', img)
 
 img = 255-img
 
@@ -88,68 +96,46 @@ img = 255-img
 # ( black and white only image).
 _, threshold = cv2.threshold(img, 55, 255, cv2.THRESH_BINARY)
 
+threshold = 255-threshold
 cv2.imshow('thresholded', threshold) 
+cv2.moveWindow( 'thresholded',size*2,0)
+cv2.imwrite('/tmp/4-threshold.png', threshold)
+threshold = 255-threshold
 
-# skeleton = skeletonize(threshold)
+# Turn into skeleton
 skeleton = cv2.ximgproc.thinning(threshold)
-
-h,w = skeleton.shape
-for y in range(w):
-    for x in range(h):
-        c = skeleton[x,y]
-        if c!=0 and c!=255:
-            exit(-1)
 
 skeleton = 255-skeleton
 cv2.imshow('skeleton', skeleton) 
+cv2.moveWindow( 'skeleton',size*3,0)
+cv2.imwrite('/tmp/5-skeleton.png', skeleton)
 skeleton = 255-skeleton
 
-
+# Extract lines
 result = []
+h,w = skeleton.shape
 for y in range(w):
     for x in range(h):
         if skeleton[y,x]==255:
             line = np.array(trace_line_from( skeleton, x, y ))
-            line = cv2.approxPolyDP(line, 1.5, False)
+            line = cv2.approxPolyDP(line, epsilon, False)
             result.append(line)
-
-skeleton = 255-skeleton
 
 tot = 0
 for c in result:
     tot += len(c)
 # print( "Total points==",tot )
 
-# # Detecting contours in image.
-# contours, _= cv2.findContours(skeleton, cv2.RETR_LIST,
-#                                 cv2.CHAIN_APPROX_NONE)
-
-# # print( contours )
-# print( original.shape )
-
+# Draw result
 img3 = 255 * np.ones(shape=(size,size,3), dtype=np.uint8)
 cv2.polylines(img3, result, False, (0, 0, 0), 1)
 
-i = 0
-for l in result:
-    c = [(0, 0, 0),(255, 0, 0),(0, 255, 0),(0, 0, 255)][i%4]
-    cv2.polylines(img3, [l], False, (0,0,0), 1)
-    i = i+1
+cv2.imshow('result', img3) 
+cv2.moveWindow( 'result',size,size)
+cv2.imwrite('/tmp/6-result.png', img3)
 
-# # cv2.drawContours(img3, contours, -1, (0, 0, 255), 1) 
 
-# for cnt in contours:
-#     # Approximate the contour to a polyline
-#     # epsilon = 0.2*cv2.arcLength(cnt, True)
-#     approx = cv2.approxPolyDP(cnt, 1, True)
 
-#     # Draw the polyline
-#     cv2.polylines(img3, [approx], True, (255, 0, 0), 1)
-
-# # # Showing the final image.
-cv2.imshow('Image Final', img3) 
-
-cv2.imwrite('output.png', img3)
 
 # Segment list for sorting
 
@@ -215,28 +201,38 @@ class Generator:
 
 g = Generator()
 
-# for c in result:
-#     g.add_segment( list([p[0][0], p[0][1]] for p in c) )
-
-img4 = 255 * np.ones(shape=(size,size,3), dtype=np.uint8)
-
-
+segment_img = 255 * np.ones(shape=(size,size,3), dtype=np.uint8)
 x = 0
 y = 0
+i = 0
 while not sl.done():
     cur = sl.closest( x, y )
     g.add_segment( cur )
 
-    cv2.line(img3, (x, y), (cur[0][0], cur[0][1]), (0,0,0), thickness=1)
+    # Draw the motion
+    cv2.line(img3, (x, y), (cur[0][0], cur[0][1]), (192,192,192), thickness=1)
+
+    # Draw all segments with different colors
+    c = [(255, 0, 0),(0, 255, 0),(0, 0, 255),(255,255,0),(255,0,255)][i%5]
+    i = i+1
+    for j in range(len(cur)-1):
+        # cv2.polylines(img3, [cur], False, c, 1)
+        cv2.line(img3, (cur[j][0], cur[j][1]), (cur[j+1][0], cur[j+1][1]), c, thickness=1)
+        cv2.line(segment_img, (cur[j][0], cur[j][1]), (cur[j+1][0], cur[j+1][1]), c, thickness=1)
 
     x = cur[-1][0]
     y = cur[-1][1]
-
 g.end()
 
 print( g.string() )
 
-cv2.imshow('Optimized', img3)
+cv2.imshow('segments', segment_img) 
+cv2.moveWindow( 'segments',size*2,size)
+cv2.imwrite('/tmp/7-segments.png', segment_img)
+
+cv2.imshow('motions', img3)
+cv2.moveWindow( 'motions',size*3,size)
+cv2.imwrite('/tmp/8-motions.png', img3)
 
 # Exiting the window if 'q' is pressed on the keyboard.
 if cv2.waitKey(0) & 0xFF == ord('q'): 
