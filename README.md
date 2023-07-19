@@ -2,7 +2,7 @@
 
 (Note: This is a work in progress)
 
-PloTTY is a python linux command line that transforms images into traces, suitable for beeing drawn on a vintage Casio PB-700, with its FA-10 pen plotter.
+PloTTY is a set of linux command lines that transforms images into traces, suitable for drawing on a vintage Casio PB-700, with its FA-10 pen plotter.
 
 Here is a typical example of the result
 
