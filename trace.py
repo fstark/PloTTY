@@ -65,15 +65,21 @@ def trace_line_from( img, x, y ):
 
     return result
 
- 
+def describe_and_save( source, text, filename ):
+    img = source.copy()
+    h = img.shape[0]
+    w = img.shape[1]
+    cv2.putText( img, text, (0,int(10*h/475)), cv2.FONT_HERSHEY_SIMPLEX, (0.4*h/475), (0,0,0), int(1*h/475) )
+    cv2.imwrite( filename, img )
+
 # Reading image
 original = cv2.imread(source_path, cv2.IMREAD_COLOR)
+describe_and_save( original, "Original Image",'/tmp/0-original.png' )
 cv2.imshow('Original', original) 
-cv2.imwrite('/tmp/0-original.png', original)
 
 # Reading grayscale
 img = cv2.imread(source_path, cv2.IMREAD_GRAYSCALE)
-cv2.imwrite('/tmp/1-grayscale.png', img)
+describe_and_save( img, "Original Image (grayscale)", '/tmp/1-grayscale.png' )
 
 # Extract corner
 h,w = img.shape
@@ -86,13 +92,13 @@ if corner!=0:
     end_col = start_col + w//2
     img = img[start_row:end_row, start_col:end_col]
 
-cv2.imwrite('/tmp/2-extract.png', img)
+describe_and_save( img, "Portion to trace", '/tmp/2-extract.png' )
 
 # Resize to PB-700 resolution
 img = cv2.resize( img, (size,size), interpolation = cv2.INTER_AREA)
+describe_and_save( img, "Downscaled to 475x475", "/tmp/3-475px.png" )
 cv2.imshow('source grayscale', img) 
 cv2.moveWindow( 'source grayscale',size,0)
-cv2.imwrite('/tmp/3-475px.png', img)
 
 img = 255-img
 
@@ -101,45 +107,19 @@ img = 255-img
 _, threshold = cv2.threshold(img, 55, 255, cv2.THRESH_BINARY)
 
 threshold = 255-threshold
+describe_and_save( threshold, "Pure black and white (thresholded)",'/tmp/4-threshold.png' )
 cv2.imshow('thresholded', threshold) 
 cv2.moveWindow( 'thresholded',size*2,0)
-cv2.imwrite('/tmp/4-threshold.png', threshold)
 threshold = 255-threshold
 
 
 
-# Erodes black pixels based on a 3x3 grid (center stays black if all 9 pixels are black)
-# def erode_black( img ):
-#     eroded = img.copy()
-#     h,w = img.shape
-#     eroded = np.zeros(shape=(h,w), dtype=np.uint8)
-
-#     for x in range(h):
-#         for y in range(w):
-#             black = 255
-#             for dx in [-1,0,1]:
-#                 for dy in [-1,0,1]:
-#                     x0 = x+dx
-#                     y0 = y+dy
-#                     if not (x0<0 or x0>=w or y0<0 or y0>=h):
-#                         if black==255:
-#                             black = img[y0,x0]
-#             eroded[y,x] = black
-
-#     return eroded
-
-# if erosion>0:
-#     eroded = threshold
-#     for i in range(erosion):
-#         eroded = erode_black(eroded)
-#     threshold -= eroded
-#     eroded = 255-eroded
-#     cv2.imshow('eroded', eroded) 
+# Erosion (erases all pixels where the 8 neighbours are not black, 'erosion' times)
+# This is aking of erasing all the pixels where the 'erosion*2+1' square around is not black
 
 def generate_convolution_matrix( iterations ):
     n = iterations*2+1
     result = np.array([[1]*n]*n)
-    # print(result)
     return result
 
 if erosion>0:
@@ -148,40 +128,51 @@ if erosion>0:
     _, eroded = cv2.threshold(eroded, 1, 255, cv2.THRESH_BINARY)
     threshold -= 255-eroded
     cv2.imshow('eroded',eroded)
-    cv2.imwrite('/tmp/erosion.png', eroded)
-    cv2.imwrite('/tmp/eroded.png', 255-threshold)
+    describe_and_save( eroded, "Erosion map", '/tmp/5-erosion.png')
+    describe_and_save( 255-threshold, "Eroded image", '/tmp/6-eroded.png' )
 
 # Turn into skeleton
 skeleton = cv2.ximgproc.thinning(threshold)
 
 skeleton = 255-skeleton
+describe_and_save( skeleton, "Skeleton (using thinning)",'/tmp/7-skeleton.png' )
 cv2.imshow('skeleton', skeleton) 
 cv2.moveWindow( 'skeleton',size*3,0)
-cv2.imwrite('/tmp/5-skeleton.png', skeleton)
 skeleton = 255-skeleton
 
 # Extract lines
 result = []
+result_detail = []
 h,w = skeleton.shape
 for y in range(w):
     for x in range(h):
         if skeleton[y,x]==255:
             line = np.array(trace_line_from( skeleton, x, y ))
+            result_detail.append(line)
             line = cv2.approxPolyDP(line, epsilon, False)
             result.append(line)
+
+tot_detail = 0
+for c in result_detail:
+    tot_detail += len(c)
 
 tot = 0
 for c in result:
     tot += len(c)
-# print( "Total points==",tot )
 
-# Draw result
+# Draw result (detail)
+result_detail_img = 255 * np.ones(shape=(size,size,3), dtype=np.uint8)
+cv2.polylines(result_detail_img, result_detail, False, (0, 0, 0), 1)
+describe_and_save( result_detail_img, f"Traced image (paths: {len(result_detail)}, points: {tot_detail})",'/tmp/9-result_detail_img.png' )
+cv2.imshow('result_detail_img', result_detail_img) 
+cv2.moveWindow( 'result detail',size,size)
+
+# Draw result (approx)
 img3 = 255 * np.ones(shape=(size,size,3), dtype=np.uint8)
 cv2.polylines(img3, result, False, (0, 0, 0), 1)
-
+describe_and_save( img3, f"With approximation (paths: {len(result)}, points: {tot})", '/tmp/10-result.png' )
 cv2.imshow('result', img3) 
 cv2.moveWindow( 'result',size,size)
-cv2.imwrite('/tmp/6-result.png', img3)
 
 
 # Sort the resulting list to limit motion of plotter head
@@ -230,8 +221,47 @@ while not sl.done():
     x = cur[-1][0]
     y = cur[-1][1]
 
+# Generates an image with all segments in order
+motion_img = 255 * np.ones(shape=(size,size,3), dtype=np.uint8)
+x = 0
+y = size
+i = 0
+for cur in draw_list:
+    # Draw all segments with different colors
+    for j in range(len(cur)-1):
+        c = [(255, 0, 0),(0, 255, 0),(0, 0, 255),(255,255,0),(255,0,255),(0,255,255)][i%5]
+        cv2.line(motion_img, (int(cur[j][0]*5), size-int(cur[j][1]*5)), (int(cur[j+1][0]*5), size-int(cur[j+1][1]*5)), c, thickness=1)
+        i = i+1
+
+    x = int(cur[-1][0]*5)
+    y = int(cur[-1][1]*5)
+
+describe_and_save( motion_img, "All segments", '/tmp/11-all-segments.png' )
+
+
+# Generates an image with segments in order and motion
+motion_img = 255 * np.ones(shape=(size,size,3), dtype=np.uint8)
+x = 0
+y = size
+i = 0
+for cur in draw_list:
+    # Draw the motion
+    cv2.line(motion_img, (x,size-y), (int(cur[0][0]*5),size-int(cur[0][1]*5)), (192,192,192), thickness=1)
+
+    # Draw all segments with different colors
+    c = [(255, 0, 0),(0, 255, 0),(0, 0, 255),(255,255,0),(255,0,255),(0,255,255)][i%5]
+    i = i+1
+    for j in range(len(cur)-1):
+         cv2.line(motion_img, (int(cur[j][0]*5), size-int(cur[j][1]*5)), (int(cur[j+1][0]*5), size-int(cur[j+1][1]*5)), c, thickness=1)
+
+    x = int(cur[-1][0]*5)
+    y = int(cur[-1][1]*5)
+
+describe_and_save( motion_img, "Motion of head and drawing", '/tmp/12-motion.png' )
+
+
 
 print( json.dumps(draw_list) )
 
-if cv2.waitKey(0) & 0xFF == ord('q'): 
-    cv2.destroyAllWindows()
+# if cv2.waitKey(0) & 0xFF == ord('q'): 
+#     cv2.destroyAllWindows()

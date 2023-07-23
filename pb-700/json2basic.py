@@ -1,5 +1,19 @@
 import json
 import sys
+import argparse
+
+# Use --input to specify input file
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Filename Parser')
+    parser.add_argument('--size', default='8000', help='Size of every chunk in bytes')
+    parser.add_argument('--output', default='prog', help='Prefix of output (prog0.bas, prog1.bas, etc)')
+    args = parser.parse_args()
+    return args
+
+args = parse_arguments()
+size_chunk = int(args.size)
+output_filename = args.output
+file_index = 0
 
 json_data = sys.stdin.read()
 
@@ -11,8 +25,10 @@ except json.JSONDecodeError as e:
 
 # Generating the BASIC program for the PB-700
 class Generator:
-    line_ = 2
-    string_ = '1LPRINT CHR$(28);CHR$(37):LPRINT"O0,-96"\n'
+    last_count_ = 0
+    count_ = 0
+    line_ = 3
+    string_ = '2LPRINT CHR$(28);CHR$(37):LPRINT"O0,-96"\n'
 
     def add_small_segment( self, s ):
         self.string_ += str(self.line_)+'LPRINT"D'
@@ -28,16 +44,41 @@ class Generator:
         while (len(s)>1):
             self.add_small_segment( s[:6] )
             s = s[5:]
+        self.count_ += 1
+
+    def oversize( self ):
+        "True if the basic file is over specified size"
+        return len(self.string_)+100>=size_chunk
+
+    def partial_end( self ):
+        global draw_list
+        self.string_ += '997LPRINT"M0,0"\n998PRINT"Request next";:A$="NEXT":PUTA$\n999PRINT" loading";:CHAIN\n'
+        self.string_ = '1CLS:PRINT"Lines '+str(self.last_count_+1)+'-'+str(self.count_)+'/'+str(len(draw_list))+'"\n' + self.string_
+        self.last_count_ = self.count_
+
+    def reset( self ):
+        self.line_ = 1
+        self.string_ = ""
 
     def end( self ):
+        global draw_list
         self.string_ += '997LPRINT"M0,-20"\n'
-        self.string_ += '998PUT"SYNC"\n'
-        self.string_ += '999CHAIN\n'
+        self.string_ += '998PRINT"--Finished --":A$="NEXT":PUTA$\n999PRINT"Loading PloTTY...":CHAIN\n'
+        self.string_ = '1CLS:PRINT"Lines '+str(self.last_count_+1)+'-'+str(self.count_)+'/'+str(len(draw_list))+'"\n' + self.string_
+        self.last_count_ = self.count_
 
     def string( self ):
         return self.string_
 
 g = Generator()
+
+def prog_print( prog_str ):
+    global file_index
+    filename = output_filename+str(file_index)+'.bas'
+    with open( filename, 'w') as file:
+        file.write(prog_str)
+        file_index += 1
+        print( "    "+filename+" ("+str(len(prog_str))+" bytes)" )
 
 # segment_img = 255 * np.ones(shape=(size,size,3), dtype=np.uint8)
 # x = 0
@@ -59,9 +100,13 @@ for cur in draw_list:
 
     # x = cur[-1][0]
     # y = cur[-1][1]
-g.end()
+    if (g.oversize()):
+        g.partial_end()
+        prog_print( g.string() )
+        g.reset()
 
-print( g.string() )
+g.end()
+prog_print( g.string() )
 
 # cv2.imshow('segments', segment_img) 
 # cv2.moveWindow( 'segments',size*2,size)
