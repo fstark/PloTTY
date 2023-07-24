@@ -14,12 +14,16 @@ while true; do
     echo "-- Sending plotty.wav to PB-700"
     play plotty.wav
 
-    # Listen and decode answer
-    echo "-- Plotty.wav sent, waiting for reply"
-    python pb-700/listen.py
-    sox recorded_audio.wav -r 44100 -c 1 -b 8 out.wav
-    casutil/linux/wav2raw -b out.wav out.bin
-    PROMPT=`python pb-700/extract-data.py`
+    PROMPT=""
+    while [[ $PROMPT == "" ]]
+        do
+        # Listen and decode answer
+        echo "-- Plotty.wav sent, waiting for reply"
+        python pb-700/listen.py
+        sox recorded_audio.wav -r 44100 -c 1 -b 8 out.wav
+        casutil/linux/wav2raw -b out.wav out.bin
+        PROMPT=`python pb-700/extract-data.py`
+    done
 
     # #### TODO: MANAGE /VARIATION
     VARIATION=`echo $PROMPT | sed -e 's/.*\/\([^\/\]*\)/\1/g'`
@@ -35,7 +39,7 @@ while true; do
     if [ ! -e "$PROMPT_FILE" ]; then
         # Ask midjourney for the file and trace resulting image
         echo "Sending prompt to midjourney:"
-        midjourney/sendrequest.sh "$PROMPT" && python midjourney/midjourney-bot.py --token `cat midjourney/midjourney-bot-token`
+        midjourney/sendrequest.sh "$PROMPT" &&                                                                                                                                                                                                      
         cp image.jpg $PROMPT_FILE
     fi
 
