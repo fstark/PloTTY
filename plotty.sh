@@ -39,7 +39,7 @@ while true; do
     if [ ! -e "$PROMPT_FILE" ]; then
         # Ask midjourney for the file and trace resulting image
         echo "Sending prompt to midjourney:"
-        midjourney/sendrequest.sh "$PROMPT" &&                                                                                                                                                                                                      
+        midjourney/sendrequest.sh "$PROMPT" && && python midjourney/midjourney-bot.py --token `cat midjourney/midjourney-bot-token`
         cp image.jpg $PROMPT_FILE
     fi
 
