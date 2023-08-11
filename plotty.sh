@@ -39,7 +39,7 @@ while true; do
     if [ ! -e "$PROMPT_FILE" ]; then
         # Ask midjourney for the file and trace resulting image
         echo "Sending prompt to midjourney:"
-        midjourney/sendrequest.sh "$PROMPT" && && python midjourney/midjourney-bot.py --token `cat midjourney/midjourney-bot-token`
+        midjourney/sendrequest.sh "$PROMPT" && python midjourney/midjourney-bot.py --token `cat midjourney/midjourney-bot-token`
         cp image.jpg $PROMPT_FILE
     fi
 
@@ -48,7 +48,7 @@ while true; do
     rm -f prog*.bas
 
     echo -n "-- Generating BASIC programs:"
-    python pb-700/json2basic.py < prog.json
+    python pb-700/json2basic.py --size 8000 < prog.json
 
     for f in prog*.bas
     do
