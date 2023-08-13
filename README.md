@@ -1,6 +1,6 @@
 # PloTTY : draw stuff with your vintage plotter
 
-The correct description of [the project is in the blog post here](http://www.stark.fr/plotty)
+The correct description of [the project is in the blog post here](http://www.stark.fr/blog/plotty)
 
 
 
