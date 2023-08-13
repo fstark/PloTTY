@@ -1,5 +1,9 @@
 # PloTTY : draw stuff with your vintage plotter
 
+The correct description of [the project is in the blog post here](http://www.stark.fr/plotty)
+
+
+
 (Note: This is a work in progress)
 
 PloTTY is a set of linux command lines that transforms images into traces, suitable for drawing on a vintage Casio PB-700, with its FA-10 pen plotter.
